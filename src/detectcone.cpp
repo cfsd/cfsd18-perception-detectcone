@@ -1094,15 +1094,7 @@ std::vector<Cone> DetectCone::MatchCones(std::vector<Cone> cones){
         m_coneFrame[i].second.setValidState(false);
         continue; 
       }
-      if(!m_coneFrame[i].first && m_coneFrame[i].second.shouldBeInFrame()){  
-        double x = m_coneFrame[i].second.getX() - posShiftX/m;
-        double y = m_coneFrame[i].second.getY() - posShiftY/m;
-        m_coneFrame[i].second.setX(x);
-        m_coneFrame[i].second.setY(y);
-        sentCounter++;    
-        sentCones.push_back(m_coneFrame[i].second);         
-      }
-      else if(m_coneFrame[i].first && m_coneFrame[i].second.checkColor()){
+      if(m_coneFrame[i].first && m_coneFrame[i].second.checkColor()){
         sentCounter++;
         m_coneFrame[i].first = false;
         sentCones.push_back(m_coneFrame[i].second);         

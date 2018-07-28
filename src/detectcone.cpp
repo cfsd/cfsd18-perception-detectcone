@@ -919,14 +919,21 @@ void DetectCone::Cartesian2Spherical(double x, double y, double z, opendlv::logi
   pointInSpherical.zenithAngle(float(zenithAngle));
 }
 
-void DetectCone::LidarToCoG(opendlv::logic::sensation::Point& conePoint){
+void DetectCone::LidarToCoG(opendlv::logic::sensation::Point& conePoint,bool behindCar){
   double angle = conePoint.azimuthAngle();
   double distance = conePoint.distance();
   const double lidarDistToCoG = 1.5;
   double sign = angle/std::fabs(angle);
   angle = PI - std::fabs(angle*DEG2RAD); 
   double distanceNew = std::sqrt(lidarDistToCoG*lidarDistToCoG + distance*distance - 2*lidarDistToCoG*distance*std::cos(angle));
-  double angleNew = std::asin((std::sin(angle)*distance)/distanceNew )*RAD2DEG; 
+  double angleNew = (std::sin(angle)*distance)/distanceNew; 
+  if(behindCar){
+    angleNew = std::asin(angleNew)+2*(PI/2-std::asin(angleNew));
+    angleNew = angleNew*RAD2DEG;   
+  }
+  else{
+      angleNew = std::asin(angleNew)*RAD2DEG;
+  }
   conePoint.azimuthAngle((float)(angleNew*sign));
   conePoint.distance((float)distanceNew);
 }
@@ -1151,7 +1158,8 @@ void DetectCone::SendMatchedContainer(std::vector<Cone> cones)
       // }else{
       //   CameraToCoG(conePoint);
       // }
-      LidarToCoG(conePoint);
+      bool behindCar = cones[n].getY()<-1.5;
+      LidarToCoG(conePoint,behindCar);
       if(std::isnan(conePoint.azimuthAngle())||std::isnan(conePoint.zenithAngle())||std::isnan(conePoint.distance())){
         std::cout << "Nan appear! " << m_currentFrame << " " << cones[n].getX() << " " << cones[n].getY() << " " << cones[n].getZ() << " " << conePoint.azimuthAngle() << " " << conePoint.zenithAngle() << " " << conePoint.distance() << " " << cones[n].m_label << std::endl;
       }

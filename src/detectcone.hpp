@@ -86,7 +86,7 @@ class DetectCone {
 
   Eigen::MatrixXd Spherical2Cartesian(double, double, double);
   void Cartesian2Spherical(double, double, double, opendlv::logic::sensation::Point&);
-  void LidarToCoG(opendlv::logic::sensation::Point& conePoint);
+  void LidarToCoG(opendlv::logic::sensation::Point& conePoint,bool behincCar);
   void CameraToCoG(opendlv::logic::sensation::Point& conePoint);
   void SendCollectedCones(Eigen::MatrixXd);
   void SendMatchedContainer(std::vector<Cone>);

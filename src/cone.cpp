@@ -61,6 +61,7 @@ void Cone::setZ(double z){
 }
 void Cone::addHit(){
   m_hits++;
+  m_missHit = 0;
 }
 int Cone::getHits(){
   return m_hits;
@@ -102,7 +103,7 @@ bool Cone::checkColor(){
     m_label=4;
     currentColorCount = m_bigOrangeCount;
   }
-  if(currentColorCount>1){
+  if(currentColorCount>0){
     return true;
   }
   else{
@@ -129,7 +130,7 @@ void Cone::addColor(size_t label){
 }
 
 bool Cone::shouldBeInFrame(){
-  if(m_hits >= 2 && m_y > -3 && (m_missHit < 2 || m_hits>12) && m_isValid && checkColor()){
+  if(m_hits >= 1 && m_y > -3 && (m_missHit < 2 || m_hits>12) && m_isValid && checkColor()){
     return true;
   }else{
     return false;

@@ -220,7 +220,7 @@ void DetectCone::checkLidarState(){
       if(m_verbose)
         std::cout << "currentFrame: " << m_currentFrame << std::endl;
       m_lidarIsWorking = false;
-      if(m_forwardDetection && m_drivingState){
+      if(m_forwardDetection){
         m_img = cv::imread("/opt/images/"+std::to_string(m_currentFrame++)+".png");
         forwardDetectionORB(m_img);
       }
@@ -415,7 +415,7 @@ void DetectCone::gather_points(
   std::vector<float>& vecDist
   )
 {  
-  double radius = 0.5;
+  double radius = 1;
   unsigned int max_neighbours = 100;
   cv::flann::KDTreeIndexParams indexParams(2);
   cv::flann::Index kdtree(source, indexParams);
@@ -638,7 +638,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
         probMap[maxIndex].at<double>(y,x) = maxProb;
     }
     for(size_t i = 0; i < 4; i++){
-      imRegionalMax(cones, i, probMap[i], 10, m_threshold, 10);
+      imRegionalMax(cones, i, probMap[i], 10, m_threshold, 15);
     }
 
     for(size_t i = 0; i < cones.size(); i++){
@@ -783,7 +783,7 @@ void DetectCone::backwardDetection(cv::Mat img, Eigen::MatrixXd& lidarCones, int
         }
       }
       if(minIndex > -1){
-        m_file << lidarCones(0,i)+m_xShift << " " << lidarCones(2,i)+m_yShift << " " << lidarCones(1,i)+m_zShift << " " << point3Ds[minIndex].x << " " << point3Ds[minIndex].y << " " << point3Ds[minIndex].z << std::endl;
+        m_file << lidarCones(0,i)+m_xShift << " " << lidarCones(2,i)+m_yShift << " " << lidarCones(1,i)+m_zShift << " " << point3Ds[minIndex].x << " " << point3Ds[minIndex].y << " " << point3Ds[minIndex].z << " " << m_currentFrame << std::endl;
         if(point3Ds[minIndex].z < 8.1234f){
           xDiffs.push_back(point3Ds[minIndex].x-lidarCones(0,i));
           yDiffs.push_back(point3Ds[minIndex].y-lidarCones(2,i));
@@ -813,13 +813,13 @@ void DetectCone::backwardDetection(cv::Mat img, Eigen::MatrixXd& lidarCones, int
   if(xDiffs.size()>0){
     double sum = std::accumulate(std::begin(xDiffs), std::end(xDiffs), 0.0);
     if(std::abs(0-sum/xDiffs.size())<0.3)
-      m_xShift = sum/xDiffs.size();
+      m_xShift = (m_xShift+sum/xDiffs.size())/2;
     sum = std::accumulate(std::begin(yDiffs), std::end(yDiffs), 0.0);
     if(std::abs(0.9-sum/yDiffs.size())<0.3)
-      m_yShift = sum/yDiffs.size();
+      m_yShift = (m_yShift+sum/yDiffs.size())/2;
     sum = std::accumulate(std::begin(zDiffs), std::end(zDiffs), 0.0);
     if(std::abs(1.1-sum/zDiffs.size())<0.5)
-      m_zShift = sum/zDiffs.size();
+      m_zShift = (m_zShift+sum/zDiffs.size())/2;
     // m_file << m_xShift << " " << m_yShift << " " << m_zShift << std::endl;
   }
   else{

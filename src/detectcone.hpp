@@ -78,7 +78,7 @@ class DetectCone {
   void filterKeypoints(std::vector<cv::Point3f>&);
   int xyz2xy(cv::Mat Q, cv::Point3f xyz, cv::Point& xy, float radius);
   int countFiles(const char*);
-  void annotate(cv::Mat, int, cv::Point, int);
+  void annotate(cv::Mat, int, cv::Point, int, double);
   void forwardDetectionORB(cv::Mat img);
   void backwardDetection(cv::Mat, Eigen::MatrixXd&, int64_t);
   std::vector<Cone> MatchCones(std::vector<Cone>);

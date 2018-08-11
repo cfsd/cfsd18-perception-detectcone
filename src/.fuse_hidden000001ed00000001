@@ -49,7 +49,7 @@ DetectCone::DetectCone(std::map<std::string, std::string> commandlineArguments, 
 , m_height(376)
 , m_xShift(0)//0
 , m_yShift(0.9)//0.833
-, m_zShift(1.2)//1.872
+, m_zShift(1.1)//1.872
 , m_fastThreshold(20)
 , m_matchDistance(1.5)
 , m_orbPatchSize(31)
@@ -227,8 +227,7 @@ void DetectCone::checkLidarState(){
     }
   }
   else{
-    int64_t timeDiff = m_imgTimeStamp - cluon::time::toMicroseconds(m_coneTimeStamp);
-    if ((timeDiff > m_checkLidarMilliseconds*1000)){
+    if(m_forwardDetection && m_drivingState){
       if(m_verbose)
         std::cout << "No lidar data received" << std::endl;
       m_lidarIsWorking = false;
@@ -238,7 +237,19 @@ void DetectCone::checkLidarState(){
       forwardDetectionORB(m_img);
     }
     else{
-      m_lidarIsWorking = true;
+      int64_t timeDiff = m_imgTimeStamp - cluon::time::toMicroseconds(m_coneTimeStamp);
+      if (timeDiff > m_checkLidarMilliseconds*1000){
+        if(m_verbose)
+          std::cout << "No lidar data received" << std::endl;
+        m_lidarIsWorking = false;
+        if(m_img.empty()){
+          return;
+        }
+        forwardDetectionORB(m_img);
+      }
+      else{
+        m_lidarIsWorking = true;
+      }
     }
   }
 }
@@ -523,10 +534,10 @@ int DetectCone::countFiles(const char* path){
   return count;
 }
 
-void DetectCone::annotate(cv::Mat img, int maxIndex, cv::Point position, int radius, double prob){
+void DetectCone::annotate(cv::Mat img, int maxIndex, cv::Point position, int radius){
   std::string path = "/opt/annotations/"+std::to_string(maxIndex);
   int num = countFiles(path.c_str());
-  path += "/"+std::to_string(maxIndex)+"_"+std::to_string(num)+"_"+std::to_string(prob)+"_.png";
+  path += "/"+std::to_string(maxIndex)+"_"+std::to_string(num)+".png";
 
   cv::Rect roi;
   roi.x = std::max(position.x - radius, 0);
@@ -544,10 +555,6 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
   //Given RoI by ORB detector and detected by CNN
   cluon::data::TimeStamp timestamp = cluon::time::now();
   // std::lock_guard<std::mutex> lockStateMachine(m_stateMachineMutex);
-  // if(!m_drivingState)
-  // {
-  //   return;
-  // }
   std::vector<Cone> cones;
   std::vector<tiny_dnn::tensor_t> inputs;
   std::vector<int> verifiedIndex;
@@ -631,7 +638,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
         probMap[maxIndex].at<double>(y,x) = maxProb;
     }
     for(size_t i = 0; i < 4; i++){
-      imRegionalMax(cones, i, probMap[i], 10, m_threshold, 10);
+      imRegionalMax(cones, i, probMap[i], 10, m_threshold, 15);
     }
 
     for(size_t i = 0; i < cones.size(); i++){
@@ -651,7 +658,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
       }
 
       if(m_annotate){
-        annotate(imgSource, maxIndex, position, radius, maxProb);
+        annotate(imgSource, maxIndex, position, radius);
       }
 
       cones[i].setX(point3D.x-m_xShift);
@@ -688,6 +695,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
   // if(m_verbose)
   std::cout << "forward detection time: " << timeDiff << "ms" << std::endl;
   // std::vector<Cone> conesToSend = MatchCones(cones);
+  // SendMatchedContainer(conesToSend);
   SendMatchedContainer(cones);
 }
 
@@ -775,7 +783,7 @@ void DetectCone::backwardDetection(cv::Mat img, Eigen::MatrixXd& lidarCones, int
         }
       }
       if(minIndex > -1){
-        // m_file << lidarCones(0,i) << " " << lidarCones(2,i) << " " << lidarCones(1,i) << " " << point3Ds[minIndex].x << " " << point3Ds[minIndex].y << " " << point3Ds[minIndex].z << std::endl;
+        m_file << lidarCones(0,i)+m_xShift << " " << lidarCones(2,i)+m_yShift << " " << lidarCones(1,i)+m_zShift << " " << point3Ds[minIndex].x << " " << point3Ds[minIndex].y << " " << point3Ds[minIndex].z << " " << m_currentFrame << std::endl;
         if(point3Ds[minIndex].z < 8.1234f){
           xDiffs.push_back(point3Ds[minIndex].x-lidarCones(0,i));
           yDiffs.push_back(point3Ds[minIndex].y-lidarCones(2,i));
@@ -812,12 +820,12 @@ void DetectCone::backwardDetection(cv::Mat img, Eigen::MatrixXd& lidarCones, int
     sum = std::accumulate(std::begin(zDiffs), std::end(zDiffs), 0.0);
     if(std::abs(1.1-sum/zDiffs.size())<0.5)
       m_zShift = (m_zShift+sum/zDiffs.size())/2;
-    m_file << m_xShift << " " << m_yShift << " " << m_zShift << std::endl;
+    // m_file << m_xShift << " " << m_yShift << " " << m_zShift << std::endl;
   }
   else{
     m_xShift = 0;
     m_yShift = 0.9;
-    m_zShift = 1.2;
+    m_zShift = 1.1;
   }
 
   if(inputs.size()>0){
@@ -836,7 +844,7 @@ void DetectCone::backwardDetection(cv::Mat img, Eigen::MatrixXd& lidarCones, int
       int radius = porperty[i][2];
 
       if(m_annotate){
-        annotate(imgSource, maxIndex, position, radius, maxProb);
+        annotate(imgSource, maxIndex, position, radius);
       }
 
       localCones[verifiedIndex[i]].m_prob = maxProb;

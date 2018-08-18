@@ -36,7 +36,7 @@ int32_t main(int32_t argc, char **argv) {
         uint32_t attentionSenderStamp = static_cast<uint32_t>(std::stoi(commandlineArguments["attentionSenderStamp"])); 
         uint32_t senderStamp = static_cast<uint32_t>(std::stoi(commandlineArguments["senderStamp"]));
         uint32_t stateMachineStamp = static_cast<uint32_t>(std::stoi(commandlineArguments["stateMachineId"]));
-        bool forwardDetection = static_cast<bool>(std::stoi(commandlineArguments["forwardDetection"]));
+
         bool sentReadySignal = false;
         
         cluon::OD4Session od4{static_cast<uint16_t>(std::stoi(commandlineArguments["cid"]))};
@@ -46,18 +46,13 @@ int32_t main(int32_t argc, char **argv) {
         Collector collector(detectcone,timeOutMs,separationTimeMs,2);
 
         cluon::data::Envelope data;
-        if(!forwardDetection){
-            auto envelopeRecieved{[&logic = detectcone, senderStamp = attentionSenderStamp, &collector](cluon::data::Envelope &&envelope)
+        auto envelopeRecieved{[&logic = detectcone, senderStamp = attentionSenderStamp, &collector](cluon::data::Envelope &&envelope)
             {
                 if(envelope.senderStamp() == senderStamp){
-                        collector.CollectCones(envelope);
-                    }
-                } 
-            };
-            od4.dataTrigger(opendlv::logic::perception::ObjectDirection::ID(),envelopeRecieved);
-            od4.dataTrigger(opendlv::logic::perception::ObjectDistance::ID(),envelopeRecieved);
-        }
-        
+                    collector.CollectCones(envelope);
+                }
+            } 
+        };
 
         auto stateMachineStatusEnvelope{[&logic = detectcone, senderStamp = stateMachineStamp](cluon::data::Envelope &&envelope)
         {
@@ -67,6 +62,8 @@ int32_t main(int32_t argc, char **argv) {
             }
         };
 
+        od4.dataTrigger(opendlv::logic::perception::ObjectDirection::ID(),envelopeRecieved);
+        od4.dataTrigger(opendlv::logic::perception::ObjectDistance::ID(),envelopeRecieved);
         od4.dataTrigger(opendlv::proxy::SwitchStateReading::ID(),stateMachineStatusEnvelope);
 
         std::stringstream currentDateTime;
@@ -208,7 +205,6 @@ int32_t main(int32_t argc, char **argv) {
     }
     return retCode;
 }
-
 
 
 

@@ -1,0 +1,76 @@
+# docker-compose.yml - Composition of micro-services to run OpenDLV software.
+# Copyright (C) 2016 Christian Berger
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# Date: 2016-10-16
+
+version: '2'
+
+services:
+    odsupercomponent:
+        image: ${IMAGE}
+        network_mode: host
+        volumes:
+        - .:/opt/opendlv.data
+        command: "/opt/od4/bin/odsupercomponent --cid=${CID} --verbose=1 --configuration=/opt/opendlv.data/configuration"
+
+    proxy-camera:
+       #image: proxy-camera:local
+       #local image, change ENTRYPOINT to CMD in Dockerfile to enable change nice value from command line
+       image: proxy-camera:0af4299
+       network_mode: host
+       group_add:
+           - video
+       ipc: host
+       privileged: true
+       user: root
+       devices:
+           - "/dev/video0:/dev/video0"
+       environment:
+           - DISPLAY=$DISPLAY
+       #    - CLUON_SHAREDMEMORY_POSIX=1
+       volumes:
+           - /tmp/.X11-unix:/tmp/.X11-unix
+           - "/dev/shm:/dev/shm"
+       ulimits:
+         memlock:
+           soft: 5600000 #1516032
+           hard: 5600000
+       command: "nice -n -10 opendlv-device-camera-opencv --name=cam0 --bgr2rgb --cid=${CID} --camera=/dev/video0 --width=2560 --height=720 --bpp=24 --freq=15"
+
+    cfsd18-perception-detectcone:
+        image: chalmersfsd/cfsd18-perception-detectcone:pre-release-385d025
+        network_mode: "host"
+        ipc: host
+        working_dir: /opt
+        environment:
+          - DISPLAY=$DISPLAY
+        volumes:
+         - /tmp/.X11-unix:/tmp/.X11-unix
+         - ./detectcone:/opt
+         - "/dev/shm:/dev/shm"
+         - ./model:/opt/model
+        depends_on:
+         - proxy-camera
+        ulimits:
+          memlock:
+            soft: 5600000 #1516032
+            hard: 5600000
+        command: "cfsd18-perception-detectcone --cid=${CID} --name=cam0 --width=2560 --height=720 --bpp=24 --threshold=0.6
+        --timeDiffMilliseconds=40 --separationTimeMs=20 --checkLidarMilliseconds=1000 --senderStamp=118 --attentionSenderStamp=116
+        --offline=0 --annotate=0 --stateMachineId=1401 --readyStateMachine=0 --forwardDetection=0 --fastThreshold=20 --orbPatchSize=31
+        --matchDistance=1.5"
+

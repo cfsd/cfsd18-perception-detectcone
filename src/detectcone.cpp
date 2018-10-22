@@ -577,7 +577,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
   if(keypoints.size()==0)
     return;
 
-  cv::Mat probMap[4] = cv::Mat::zeros(m_height, m_width, CV_64F);
+  cv::Mat probMap[4] = {cv::Mat::zeros(m_height, m_width, CV_64F)};
 
   std::vector<cv::Point3f> point3Ds;
   cv::Point point2D;

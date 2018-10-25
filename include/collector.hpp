@@ -24,7 +24,7 @@
 #include <cmath>
 #include <vector>
 #include <chrono>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include "opendlv-standard-message-set.hpp"
 #include "detectcone.hpp"
 #include "cluon-complete.hpp"

@@ -62,6 +62,8 @@ RUN mkdir -p build && \
     cd build && \
     cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/tmp/cfsd18-perception-detectcone-dest .. && \
     make -j3 && make test && make install 
+    # mkdir -p /usr/lib/dependency && \
+    # cp $(ldd cfsd18-perception-detectcone | awk '/\/usr\/bin/ {print $3}') /usr/lib/dependency/
     # && upx -9 /tmp/cfsd18-perception-detectcone-dest/bin/cfsd18-perception-detectcone
 
 # Part to deploy opendlv-perception-vision-orbslam2
@@ -76,7 +78,81 @@ RUN apk update && \
 WORKDIR /usr/bin
 # This will make the image heavy... Do we need all of them?
 # This could be slimmed down
-COPY --from=builder /usr/local/lib/ /usr/lib/
-COPY --from=builder /usr/lib/ /usr/lib/
+# Nothing in the builder's /usr/local/lib
+# COPY --from=builder /usr/local/lib/ /usr/lib/
+# COPY --from=builder /usr/lib/ /usr/lib/
+
+# COPY --from=builder /usr/lib/dependency/ /usr/lib/
+# Tried to copy from /usr/lib/dependency/
+# but " ldd cfsd18-perception-detectcone | awk '{print $3}' " output nothing (i.e. line 66 failed)
+# instead, use the manual and tedious way
+# image size: 393MB -> 79.1MB
+COPY --from=builder /usr/lib/libopencv_calib3d.so.3.2 \
+                    /usr/lib/libopencv_features2d.so.3.2 \
+                    /usr/lib/libopencv_flann.so.3.2 \
+                    /usr/lib/libopencv_highgui.so.3.2 \
+                    /usr/lib/libopencv_imgcodecs.so.3.2 \
+                    /usr/lib/libopencv_imgproc.so.3.2 \
+                    /usr/lib/libopencv_core.so.3.2 \
+                    /usr/lib/libstdc++.so.6 \
+                    /usr/lib/libgcc_s.so.1 \
+                    /usr/lib/libgtk-3.so.0 \
+                    /usr/lib/libgdk-3.so.0 \
+                    /usr/lib/libcairo.so.2 \
+                    /usr/lib/libgdk_pixbuf-2.0.so.0 \
+                    /usr/lib/libgobject-2.0.so.0 \
+                    /usr/lib/libglib-2.0.so.0 \
+                    /usr/lib/libjpeg.so.8 \
+                    /usr/lib/libwebp.so.7 \
+                    /usr/lib/libpng16.so.16 \
+                    /usr/lib/libtiff.so.5 \
+                    /usr/lib/libjasper.so.4 \
+                    /usr/lib/libIlmImf-2_2.so.23 \
+                    /usr/lib/libHalf.so.12 \
+                    /usr/lib/libgomp.so.1 \
+                    /usr/lib/libgmodule-2.0.so.0 \
+                    /usr/lib/libpangocairo-1.0.so.0 \
+                    /usr/lib/libX11.so.6 \
+                    /usr/lib/libXi.so.6 \
+                    /usr/lib/libXfixes.so.3 \
+                    /usr/lib/libcairo-gobject.so.2 \
+                    /usr/lib/libatk-1.0.so.0 \
+                    /usr/lib/libatk-bridge-2.0.so.0 \
+                    /usr/lib/libepoxy.so.0 \
+                    /usr/lib/libpangoft2-1.0.so.0 \
+                    /usr/lib/libpango-1.0.so.0 \
+                    /usr/lib/libfontconfig.so.1 \
+                    /usr/lib/libgio-2.0.so.0 \
+                    /usr/lib/libintl.so.8 \
+                    /usr/lib/libXinerama.so.1 \
+                    /usr/lib/libXrandr.so.2 \
+                    /usr/lib/libXcursor.so.1 \
+                    /usr/lib/libXcomposite.so.1 \
+                    /usr/lib/libXdamage.so.1 \
+                    /usr/lib/libxkbcommon.so.0 \
+                    /usr/lib/libwayland-cursor.so.0 \
+                    /usr/lib/libwayland-egl.so.1 \
+                    /usr/lib/libwayland-client.so.0 \
+                    /usr/lib/libXext.so.6 \
+                    /usr/lib/libpixman-1.so.0 \
+                    /usr/lib/libfreetype.so.6 \
+                    /usr/lib/libxcb-shm.so.0 \
+                    /usr/lib/libxcb.so.1 \
+                    /usr/lib/libxcb-render.so.0 \
+                    /usr/lib/libXrender.so.1 \
+                    /usr/lib/libffi.so.6 \
+                    /usr/lib/libpcre.so.1 \
+                    /usr/lib/libIex-2_2.so.12 \
+                    /usr/lib/libIlmThread-2_2.so.12 \
+                    /usr/lib/libatspi.so.0 \
+                    /usr/lib/libdbus-1.so.3 \
+                    /usr/lib/libharfbuzz.so.0 \
+                    /usr/lib/libexpat.so.1 \
+                    /usr/lib/libbz2.so.1 \
+                    /usr/lib/libXau.so.6 \
+                    /usr/lib/libXdmcp.so.6 \
+                    /usr/lib/libgraphite2.so.3 \
+                    /usr/lib/libbsd.so.0 \
+                    /usr/lib/
 COPY --from=builder /tmp/cfsd18-perception-detectcone-dest/bin/cfsd18-perception-detectcone .
 CMD ["/usr/bin/cfsd18-perception-detectcone"]

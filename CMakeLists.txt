@@ -19,7 +19,7 @@ project(cfsd18-perception-detectcone)
 
 ################################################################################
 # Defining the relevant versions of OpenDLV Standard Message Set and libcluon.
-set(OPENDLV_STANDARD_MESSAGE_SET opendlv-standard-message-set-v0.9.1.odvd)
+set(OPENDLV_STANDARD_MESSAGE_SET opendlv-standard-message-set-v0.9.5.odvd)
 set(CLUON_COMPLETE cluon-complete-v0.0.114.hpp)
 set(CLUON_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 ################################################################################
@@ -53,17 +53,21 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 # Threads are necessary for linking the resulting binaries as UDPReceiver is running in parallel.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake.Modules")
+
 ################################################################################
 # Extract cluon-msc from cluon-complete.hpp.
 
-execute_process(COMMAND wget -P ${CLUON_PATH} https://raw.githubusercontent.com/chrberger/libcluon/gh-pages/headeronly/${CLUON_COMPLETE})
+# Downloads a file, populates the root dir (needs to discussed if we want this...)
+# execute_process(COMMAND wget -P ${CLUON_PATH} https://raw.githubusercontent.com/chrberger/libcluon/gh-pages/headeronly/${CLUON_COMPLETE})
 
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/cluon-msc
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CLUON_PATH}/${CLUON_COMPLETE} ${CMAKE_BINARY_DIR}/cluon-complete.hpp
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/include/${CLUON_COMPLETE} ${CMAKE_BINARY_DIR}/cluon-complete.hpp
     COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_BINARY_DIR}/cluon-complete.hpp ${CMAKE_BINARY_DIR}/cluon-complete.cpp
     COMMAND ${CMAKE_CXX_COMPILER} -o ${CMAKE_BINARY_DIR}/cluon-msc ${CMAKE_BINARY_DIR}/cluon-complete.cpp -std=c++14 -pthread -D HAVE_CLUON_MSC
-    DEPENDS ${CLUON_PATH}/${CLUON_COMPLETE})
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/${CLUON_COMPLETE})
 
 ################################################################################
 # Generate opendlv-standard-message-set.{hpp,cpp} from ${OPENDLV_STANDARD_MESSAGE_SET} file.
@@ -80,6 +84,7 @@ include_directories(SYSTEM ${CMAKE_BINARY_DIR})
 add_library(${PROJECT_NAME}-core STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/detectcone.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collector.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/cone.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp)
 add_custom_target(generate_opendlv_standard_message_set_hpp DEPENDS ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp)
 add_dependencies(${PROJECT_NAME}-core generate_opendlv_standard_message_set_hpp)
+
 ################################################################################
 # OpenCV
 find_package(OpenCV REQUIRED)
@@ -88,7 +93,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 ################################################################################
 # Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-include_directories(SYSTEM "/usr/local/include/eigen3")
+include_directories(${Eigen_INCLUDE_DIRS})
 
 ###############################################################################
 # OpenMP
@@ -102,37 +107,31 @@ IF(USE_OpenMP)
 ENDIF()
 
 ###############################################################################
-#TinyDnn
+# TinyDnn
 find_package(TinyDNN REQUIRED)
 
 ###############################################################################
-#TBB
+# TBB
 find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
-add_definitions(${TBB_DEFINITIONS})
 
-SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
+################################################################################
+# LibRT
 find_package(LibRT REQUIRED)
 set(LIBRARIES ${LIBRARIES} ${LIBRT_LIBRARIES})
 include_directories(SYSTEM ${LIBRT_INCLUDE_DIR})
-################################################################################
-# Link libs
-#set(LIBRARIES Threads::Threads opencv_core opencv_imgcodecs opencv_features2d opencv_imgproc opencv_highgui opencv_calib3d rt libgio-2.0)
 
 include_directories(SYSTEM /usr/include)
 include_directories(SYSTEM /usr/local/include)
-link_directories(SYSTEM /usr/lib) #Access g2o
-link_directories(SYSTEM /usr/local/lib) #Access g2o
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
-# Add custom libs h
-set(LIBRARIES ${LIBRARIES} Threads::Threads ${OpenCV_LIBS} ${Eigen3_LIBS} ${TinyDNN_LIBS} ${TBB_LIBRARIES} rt)
+################################################################################
+# Link libs
+set(LIBRARIES ${LIBRARIES} Threads::Threads ${OpenCV_LIBS} ${Eigen3_LIBS} ${TinyDNN_LIBS} ${TBB_LIBRARIES} )
 
 MESSAGE(STATUS ${LIBRARIES})
-#${TBB_LIBRARIES}
 
 ################################################################################
 # Create executable.

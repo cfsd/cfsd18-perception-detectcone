@@ -25,7 +25,7 @@
 #include <vector>
 #include <cmath>
 #include <thread>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <cstdint>
 #include <tuple>
 #include <utility>

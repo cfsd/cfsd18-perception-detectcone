@@ -19,8 +19,8 @@ project(cfsd18-perception-detectcone)
 
 ################################################################################
 # Defining the relevant versions of OpenDLV Standard Message Set and libcluon.
-set(OPENDLV_STANDARD_MESSAGE_SET opendlv-standard-message-set-v0.9.1.odvd)
-set(CLUON_COMPLETE cluon-complete-v0.0.102.hpp)
+set(OPENDLV_STANDARD_MESSAGE_SET opendlv-standard-message-set-v0.9.5.odvd)
+set(CLUON_COMPLETE cluon-complete-v0.0.114.hpp)
 
 ################################################################################
 # This project requires C++14 or newer.
@@ -63,11 +63,10 @@ add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/cluon-msc
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/${CLUON_COMPLETE})
 
 ################################################################################
-# Generate opendlv-standard-message-set.{hpp,cpp} from ${OPENDLV_STANDARD_MESSAGE_SET} file.
-add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.cpp
+# Generate opendlv-standard-message-set.hpp from ${OPENDLV_STANDARD_MESSAGE_SET} file.
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_BINARY_DIR}/cluon-msc --cpp-sources --cpp-add-include-file=opendlv-standard-message-set.hpp --out=${CMAKE_BINARY_DIR}/opendlv-standard-message-set.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/${OPENDLV_STANDARD_MESSAGE_SET}
-    COMMAND ${CMAKE_BINARY_DIR}/cluon-msc --cpp-headers --out=${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/${OPENDLV_STANDARD_MESSAGE_SET}
+    COMMAND ${CMAKE_BINARY_DIR}/cluon-msc --cpp --out=${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/${OPENDLV_STANDARD_MESSAGE_SET}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/${OPENDLV_STANDARD_MESSAGE_SET} ${CMAKE_BINARY_DIR}/cluon-msc)
 
 # Add current build directory as include directory as it contains generated files.
@@ -126,7 +125,10 @@ link_directories(SYSTEM /usr/local/lib) #Access g2o
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-add_library(${PROJECT_NAME}-core STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/detectcone.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collector.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/cone.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.cpp)
+add_library(${PROJECT_NAME}-core STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/detectcone.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collector.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/cone.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/point.cpp)
+
+add_custom_target(generate_opendlv_standard_message_set_hpp DEPENDS ${CMAKE_BINARY_DIR}/opendlv-standard-message-set.hpp)
+add_dependencies(${PROJECT_NAME}-core generate_opendlv_standard_message_set_hpp)
 
 # Add custom libs h
 set(LIBRARIES ${LIBRARIES} Threads::Threads ${OpenCV_LIBS} ${Eigen3_LIBS} ${TinyDNN_LIBS} ${TBB_LIBRARIES} rt) 

@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import cv2
-from random
+import random
 import glob
 
 patch_size = 64
@@ -53,5 +53,6 @@ def split_dataset(data_paths):
                         num += 1
                     cv2.imwrite(os.path.join(save_path, str(num)+'.png'),img)
 
-split_dataset(['/media/weiming/46823A5A823A4F253/data/2018-07-26_174108/annotations-hard',
-    '/media/weiming/46823A5A823A4F253/data/2018-08-10_133910/annotations-hard'])
+#split_dataset(['/media/weiming/46823A5A823A4F253/data/2018-07-26_174108/annotations-hard',
+#    '/media/weiming/46823A5A823A4F253/data/2018-08-10_133910/annotations-hard'])
+split_dataset(['/home/ruguang/docker-CFSD/local-replay/perception-replay/cfsd-perception-detectcone/cnn/data/train'])

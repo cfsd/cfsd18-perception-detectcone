@@ -229,8 +229,10 @@ void DetectCone::checkLidarState(){
   else{
     int64_t timeDiff = m_imgTimeStamp - cluon::time::toMicroseconds(m_coneTimeStamp);
     if ((timeDiff > m_checkLidarMilliseconds*1000)){
-      if(m_verbose)
+      if(!m_forwardDetection && m_verbose) {
         std::cout << "No lidar data received" << std::endl;
+        std::cout << "timeDiff: " << timeDiff << ", imgTimeStamp" << m_imgTimeStamp << ", coneTimeStamp: " << cluon::time::toMicroseconds(m_coneTimeStamp) << std::endl;
+      }
       m_lidarIsWorking = false;
       if(m_img.empty()){
         return;
@@ -326,10 +328,10 @@ void DetectCone::CNN(const std::string& dictionary, tiny_dnn::network<tiny_dnn::
 
   tiny_dnn::core::backend_t backend_type = tiny_dnn::core::default_engine();
 
-  model << conv(64, 64, 4, 3, 16, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh()                                                   
-     << conv(31, 31, 3, 16, 16, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh() 
-     << conv(15, 15, 3, 16, 32, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh() 
-     << conv(7, 7, 3, 32, 32, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh()                    
+  model << conv(64, 64, 4, 3, 16, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh()                                                   
+     << conv(31, 31, 3, 16, 16, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh() 
+     << conv(15, 15, 3, 16, 32, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh() 
+     << conv(7, 7, 3, 32, 32, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh()                    
      << fc(3 * 3 * 32, 128, true, backend_type) << relu()  
      << fc(128, 4, true, backend_type) << softmax(4); 
 
@@ -560,7 +562,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
   std::string labels[] = {"background", "blue", "yellow", "orange"};
   int resultWidth = m_height;
   int resultHeight = m_height;
-  cv::Mat result = cv::Mat::zeros(resultWidth,resultHeight,CV_8UC3);
+  cv::Mat result = cv::Mat::zeros(resultWidth,resultHeight,CV_8UC4);
   double resultResize = 15;
 
   cv::Mat Q, XYZ, imgRoI, imgSource;
@@ -681,6 +683,9 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
   cv::flip(result, result, 0);
   cv::hconcat(img,result,outImg);
 
+  cv::imshow("outImg", outImg);
+  cv::waitKey(1);
+
   std::string saveString = m_folderName+std::to_string(m_currentFrame)+".png";
   std::thread imWriteThread(&DetectCone::saveImages,this,saveString,outImg);
   imWriteThread.detach();
@@ -710,7 +715,7 @@ void DetectCone::backwardDetection(cv::Mat img, Eigen::MatrixXd& lidarCones, int
 
   int resultWidth = m_height;
   int resultHeight = m_height;
-  cv::Mat result = cv::Mat::zeros(resultWidth,resultHeight,CV_8UC3);
+  cv::Mat result = cv::Mat::zeros(resultWidth,resultHeight,CV_8UC4);
   double resultResize = 15;
     
   // cv::medianBlur(img, img, 5);
@@ -1179,5 +1184,7 @@ void DetectCone::SendMatchedContainer(std::vector<Cone> cones)
 }
 
 void DetectCone::saveImages(std::string saveString, cv::Mat img){
-  cv::imwrite(saveString,img);
+  // cv::imwrite(saveString,img);
+  saveString = saveString;
+  img = img;
 }

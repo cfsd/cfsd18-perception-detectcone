@@ -92,13 +92,13 @@ void construct_net(N &nn, tiny_dnn::core::backend_t backend_type) {
   using softmax = tiny_dnn::softmax_layer;
   using dropout = tiny_dnn::dropout_layer;
 
-  nn << conv(64, 64, 4, 3, 16, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh() 
+  nn << conv(64, 64, 4, 3, 16, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh() 
      << dropout(31*31*16, 0.25)                                                   
-     << conv(31, 31, 3, 16, 16, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh() 
+     << conv(31, 31, 3, 16, 16, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh() 
      << dropout(15*15*16, 0.25)
-     << conv(15, 15, 3, 16, 32, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh() 
+     << conv(15, 15, 3, 16, 32, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh() 
      << dropout(7*7*32, 0.25)
-     << conv(7, 7, 3, 32, 32, tiny_dnn::padding::valid, true, 2, 2, backend_type) << tanh() 
+     << conv(7, 7, 3, 32, 32, tiny_dnn::padding::valid, true, 2, 2, 1, 1, backend_type) << tanh() 
      << dropout(3*3*32, 0.25)                     
      << fc(3 * 3 * 32, 128, true, backend_type) << relu()  
      << fc(128, 4, true, backend_type) << softmax(4);

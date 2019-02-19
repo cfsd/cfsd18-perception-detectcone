@@ -49,8 +49,8 @@ RUN git clone --depth 20 https://github.com/tiny-dnn/tiny-dnn.git && \
   mkdir -p tiny-dnn/build && \
   cd tiny-dnn/build && \
   # Temp fix for the recent compilation error
-  # git checkout 1aec6a1ece0ba7a5e018a070bd52e045d49d1411 && \
-  git checkout a8de26ad40d955908c5ec4fc946c3c67dd381c6c && \
+  git checkout 1aec6a1ece0ba7a5e018a070bd52e045d49d1411 && \
+  # git checkout a8de26ad40d955908c5ec4fc946c3c67dd381c6c && \
   cmake -DUSE_TBB=ON -DUSE_OMP=ON .. && \
   make install
 

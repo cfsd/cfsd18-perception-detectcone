@@ -608,6 +608,7 @@ void DetectCone::forwardDetectionORB(cv::Mat img){
 
     if(0 < roi.width && 0 < roi.height && radius > 0){
       cv::Mat patchImg = imgSource(roi);
+      cv::cvtColor(patchImg, patchImg, cv::COLOR_BGRA2BGR);
       tiny_dnn::vec_t data;
       convertImage(patchImg, m_patchSize, m_patchSize, data);
       inputs.push_back({data});

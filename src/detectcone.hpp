@@ -56,7 +56,6 @@ class DetectCone {
   DetectCone(DetectCone const &) = delete;
   DetectCone &operator=(DetectCone const &) = delete;
   ~DetectCone();
-  void nextContainer(cluon::data::Envelope data);
   void receiveCombinedMessage(cluon::data::TimeStamp currentFrameTime,std::map<int,ConePackage> currentFrame);
   void checkLidarState();
   bool getdrivingState();
@@ -135,6 +134,9 @@ class DetectCone {
   const double DEG2RAD = 0.017453292522222; // PI/180.0
   const double RAD2DEG = 57.295779513082325; // 1.0 / DEG2RAD;
   const double PI = 3.14159265;
+  //CFSD19 modification
+  uint32_t m_frameCounter;
+  uint32_t m_coneID;
 };
 
 

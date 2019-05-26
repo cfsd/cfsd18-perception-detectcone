@@ -45,10 +45,17 @@ int32_t main(int32_t argc, char **argv) {
         int separationTimeMs = std::stoi(commandlineArguments["separationTimeMs"]);
         Collector collector(detectcone,timeOutMs,separationTimeMs,2);
 
+        bool firstLidarEnvelope = true;
+        int64_t firstTsInRecording;
         cluon::data::Envelope data;
-        auto envelopeRecieved{[&logic = detectcone, senderStamp = attentionSenderStamp, &collector](cluon::data::Envelope &&envelope)
+        auto envelopeRecieved{[&logic = detectcone, senderStamp = attentionSenderStamp, &collector, &firstLidarEnvelope, &firstTsInRecording](cluon::data::Envelope &&envelope)
             {
                 if(envelope.senderStamp() == senderStamp){
+                    if (firstLidarEnvelope) { 
+                        cluon::data::TimeStamp timeStamp = envelope.sampleTimeStamp();
+                        firstTsInRecording = cluon::time::toMicroseconds(timeStamp);
+                        firstLidarEnvelope = false;
+                    }
                     collector.CollectCones(envelope);
                 }
             } 
@@ -142,27 +149,55 @@ int32_t main(int32_t argc, char **argv) {
                 std::unique_ptr<cluon::SharedMemory> sharedMemory(new cluon::SharedMemory{NAME});
                 if (sharedMemory && sharedMemory->valid()) {
                     std::clog << argv[0] << ": Found shared memory '" << sharedMemory->name() << "' (" << sharedMemory->size() << " bytes)." << std::endl;
+                    
+                    bool firstImg = true;
+                    int64_t firstTsInReplaying = 0, ts;
+                    cluon::data::TimeStamp imgTimeStamp;
+                    cv::Mat img;
+                    // cv::Size size;
+                    // size.width = WIDTH;
+                    // size.height = HEIGHT;
+                    // IplImage *image = cvCreateImageHeader(size, IPL_DEPTH_8U, BPP/8);
+                    // sharedMemory->lock();
+                    // image->imageData = sharedMemory->data();
+                    // image->imageDataOrigin = image->imageData;
+                    // sharedMemory->unlock();
 
-                    cv::Size size;
-                    size.width = WIDTH;
-                    size.height = HEIGHT;
+                    // sharedMemory->wait();
+                    // sharedMemory->lock();
+                    // {
+                    //     cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
+                    //     img = wrapped.clone();
+                    // }
+                    // sharedMemory->unlock();
 
-                    IplImage *image = cvCreateImageHeader(size, IPL_DEPTH_8U, BPP/8);
-                    sharedMemory->lock();
-                    image->imageData = sharedMemory->data();
-                    image->imageDataOrigin = image->imageData;
-                    sharedMemory->unlock();
-                    bool drivingState = false;
+                    bool drivingState = detectcone.getdrivingState();
                     while (od4.isRunning()) {
                         // The shared memory uses a pthread broadcast to notify us; just sleep to get awaken up.
+                        // sharedMemory->wait();
+                        // sharedMemory->lock();
+                        // image->imageData = sharedMemory->data();
+                        // image->imageDataOrigin = image->imageData;
+                        // cv::Mat img = cv::cvarrToMat(image); 
+                        // sharedMemory->unlock();
+
                         sharedMemory->wait();
-                        
                         sharedMemory->lock();
-                        image->imageData = sharedMemory->data();
-                        image->imageDataOrigin = image->imageData;
-                        cv::Mat img = cv::cvarrToMat(image); 
+                        {
+                            cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
+                            img = wrapped.clone();
+                            if (firstImg) {
+                                cluon::data::TimeStamp timeStamp = cluon::time::now();
+                                firstTsInReplaying = cluon::time::toMicroseconds(timeStamp);
+                                firstImg = false;
+                            }
+                            else {
+                                imgTimeStamp = cluon::time::now();
+                                ts = cluon::time::toMicroseconds(imgTimeStamp) - firstTsInReplaying + firstTsInRecording;
+                            }
+                        }
                         sharedMemory->unlock();
-                        cv::waitKey(1);
+                        // cv::waitKey(1);
 
                         if(readyCounter++ > 150){
                             if(!sentReadySignal){
@@ -176,8 +211,6 @@ int32_t main(int32_t argc, char **argv) {
                         }
 
                         if(drivingState){
-                            cluon::data::TimeStamp imgTimestamp = cluon::time::now();
-                            int64_t ts = cluon::time::toMicroseconds(imgTimestamp);
                             std::pair<int64_t, cv::Mat> imgAndTimeStamp(ts, img);
                             detectcone.setTimeStamp(imgAndTimeStamp);
                             detectcone.checkLidarState();
@@ -190,7 +223,7 @@ int32_t main(int32_t argc, char **argv) {
                         }                       
                     }
                     file.close();
-                    cvReleaseImageHeader(&image);
+                    // cvReleaseImageHeader(&image);
                 }
                 else {
                     std::cerr << argv[0] << ": Failed to access shared memory '" << NAME << "', camera fails!" << std::endl;

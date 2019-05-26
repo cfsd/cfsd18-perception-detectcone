@@ -1,0 +1,37 @@
+# Copyright (C) 2018  Christian Berger
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+version: '2' # Must be present exactly once at the beginning of the docker-compose.yml file
+
+services:    # Must be present exactly once at the beginning of the docker-compose.yml file
+    cfsd18-perception-detectcone:
+        #latest
+        # image: chalmersfsd/cfsd18-perception-detectcone:pre-release-dffc4a0
+        image: cfsd18-perception-detectcone:v1.0
+        network_mode: "host"
+        ipc: host
+        working_dir: /opt
+        environment:
+          - DISPLAY=$DISPLAY
+        volumes:
+         - /tmp:/tmp
+         - ./detectcone:/opt
+         - ${PWD}/model_new:/opt/model # have to use absolute path for mounting file
+         #- ${PWD}/model_old:/opt/model
+        ulimits:
+          memlock:
+            soft: 5600000
+            hard: 5600000
+        command: "cfsd18-perception-detectcone --cid=219 --name=img.argb --width=2560 --height=720 --bpp=24 --threshold=0.6 --timeDiffMilliseconds=40 --separationTimeMs=20 --checkLidarMilliseconds=1000 --senderStamp=118 --attentionSenderStamp=116 --offline=0 --annotate=0 --stateMachineId=1401 --readyStateMachine=1 --forwardDetection=1 --fastThreshold=7 --orbPatchSize=15 --matchDistance=1.5 --verbose"
